@@ -1,0 +1,53 @@
+pipeline{
+    tools{
+        jdk 'myjava'
+        maven 'mymaven'
+    }
+	agent any
+      stages{
+           stage('clonerepo'){
+			   agent any 	
+               steps{
+                 git 'https://github.com/pmvdevops/DevOpsClassCodes.git'
+              }
+          }
+          stage('Compile'){
+			  agent {label 'Linux_Slave'}	
+              steps{
+                  git 'https://github.com/pmvdevops/DevOpsClassCodes.git'
+                  sh 'mvn compile'
+	      }
+          }
+          stage('CodeReview'){
+		      agent {label 'Windows_slave'}	
+              steps{		    		  
+                  bat 'mvn pmd:pmd'
+              }
+          }
+           stage('UnitTest'){
+		      agent {label 'Windows_slave'}	
+              steps{
+                  git 'https://github.com/pmvdevops/DevOpsClassCodes.git'
+                  bat 'mvn test'
+              }
+              post {
+                  success {
+                      junit 'target/surefire-reports/*.xml'
+                  }
+              }
+          }
+          stage('MetricCheck'){
+		      agent any
+              steps{		    		  
+                  sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml'
+              }
+          }
+          stage('package'){
+		      agent {label 'Windows_slave'}	
+              steps{
+                  git 'https://github.com/pmvdevops/DevOpsClassCodes.git'
+                  bat 'mvn package'
+              }
+          }
+}
+}
